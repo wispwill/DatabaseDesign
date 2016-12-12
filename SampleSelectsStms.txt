@@ -1,0 +1,427 @@
+
+-----------------------SELECT STATEMENTS--------------------
+
+--1.) select all the items in our inventory not made according to 
+--a pattern on record.
+
+select * 
+from inventory 
+where pat_id is null;
+
+
+--2.)count how many current orders we have of each type
+
+select count(o_id) as "Count", o_type   
+from orders 
+group by o_type;
+
+--3.)show all the inventory made by an employee,
+--with their first name displayed.
+
+select e.emp_first, i.inv_id, i.inv_desc, i.pat_id
+from employees e, inventory i
+where e.emp_id = i.emp_id
+order by e.emp_first;
+
+--4.) Inventory that contains the color green 
+--(light green, dark green, teal green etc.)
+
+select *
+from inventory
+where col_pri like '%Green%'
+or col_sec like '%Green%'
+or col_ter like '%Green%';
+
+--5.)Select all inventory priced past the average
+
+select inv_id, price
+from inventory
+where price >
+(select avg(price)
+from inventory
+);
+
+
+--6.)select all inventory made by the employee who's last name is
+--entered by the user
+
+select i.*, e.emp_last
+from employees e, inventory i
+where e.emp_id = i.emp_id
+and e.emp_last = '&EmployeeLastName';
+
+--7.)select contact info for employees currently 
+--making unfilled orders
+
+select distinct o.emp_id, e.emp_email, e.emp_phone, 
+e.emp_first, e.emp_last
+from orders o, employees e
+where o.emp_id = e.emp_id
+and o.date_filled is null;
+
+
+
+--8.)how much money total has not yet been payed to the company per 
+--customer? (from orders)
+
+select c_id, sum(current_owed)
+from orders
+group by c_id
+order by c_id;
+
+--9.) select all orders not yet filled, when they were ordered,
+-- who is making them, and a description of the pattern.
+
+select o.o_id, o.date_ordered, e.emp_first, p.pat_desc
+from orders o, employees e, patterns p
+where p.pat_id = o.pat_id and o.emp_id = e.emp_id
+and o.date_filled is  null;
+
+--10.) How much yarn will it take of each type to make 
+--the unfilled orders?
+
+select p.material, sum(p.skeins) as "Total Skeins"
+from patterns p, orders o
+where o.pat_id = p.pat_id
+and o.date_filled is null
+group by p.material;
+
+
+
+
+--------------------PL/SQL BLOCKS---------------------
+
+--1.) Print out a notice that it is an employees job to make 
+--their unfilled orders
+
+
+declare
+
+vempid employees.emp_id%type := &empid;
+
+vfirst employees.emp_first%type;
+
+vcid customers.c_id%type;
+
+vpatdesc patterns.pat_desc%type;
+
+Cursor ordercursor is select * from orders;
+
+
+begin
+
+select emp_first into vfirst
+from employees
+where emp_id = vempid;
+
+
+DBMS_output.Put_Line(vfirst || ', you have these unfinished projects:');
+
+
+for myrow in ordercursor loop
+
+
+
+if myrow.date_filled is null and myrow.emp_id = vempid then
+
+
+select c_id into vcid
+from orders
+where o_id = myrow.o_id;
+
+select p.pat_desc into vpatdesc
+from patterns p, orders o
+where o.pat_id = p.pat_id
+and o.o_id = myrow.o_id;
+
+
+DBMS_output.Put_Line(vpatdesc || ', for customer with id '
+|| vcid);
+
+
+
+end if;
+
+
+
+end loop;
+
+
+
+end;
+
+/
+
+
+
+
+
+
+--2.) items in inventory for over a month get discounted 10%
+--(rounded dollars, because random cents looks cheap when you
+--are selling things)
+
+
+
+declare
+
+
+
+Cursor invcursor is select * from inventory;
+
+
+
+
+
+begin
+
+
+
+
+
+for myrow in invcursor loop
+
+
+
+if months_between(sysdate, myrow.date_made) >= 1 then
+
+update inventory
+
+set price = price * .9
+
+where inv_id = myrow.inv_id;
+
+
+
+DBMS_output.Put_Line(myrow.inv_id || ' updated!');
+
+
+
+end if;
+
+
+
+end loop;
+
+
+
+
+
+end;
+
+/
+
+
+
+
+
+
+
+
+
+--3.)A customer orders another item
+
+declare
+
+
+
+vpatid patterns.pat_id%type := &id_patttern_ordered;
+
+
+
+vcid customer.c_id%type := &who_ordered_it;
+
+vempid employees.emp_id%type := &who_is_making_it;
+
+votype orders.o_type%type := '&what_type_of_order';
+
+ex_invalEmp exception;
+ex_invalCust exception;
+ex_invalPat exception;
+
+begin
+
+
+
+if vpatid > pat_id_seq.CURRVAL then
+raise ex_invalPat;
+
+elsif vempid > emp_id_seq.CURRVAL then
+raise ex_invalEmp;
+
+elsif vcid > c_id_seq.CURRVAL then
+raise ex_invalCust;
+
+end if;
+
+insert into orders values
+(o_id_seq.NEXTVAL, vcid, vempid, vpatid, votype, 
+sysdate, null, 0, &pricecharged);
+
+
+
+
+
+exception 
+
+
+
+when ex_invalEmp then
+
+DBMS_output.Put_Line('Invalid employee id');
+
+when ex_invalCust then
+
+DBMS_output.Put_Line('Invalid customer id');
+
+when ex_invalPat then
+
+DBMS_output.Put_Line('Invalid pattern id');
+
+
+
+
+when others then
+
+DBMS_output.Put_Line('Error');
+
+
+
+
+
+end;
+
+/
+
+
+
+
+
+
+--4.) Print out all the descriptions of pats w/ acrylic yarn
+--(we have a surplus of acrylic yarn, want to use it up)
+
+declare
+
+
+
+Cursor patcursor is select * from patterns;
+
+
+
+begin
+
+
+
+
+for myrow in patcursor loop
+
+if myrow.material = 'Acrylic' then
+
+DBMS_output.Put_Line(myrow.pat_id ||', '
+||myrow.pat_name||', skeins: '|| myrow.skeins 
+|| ', description: '||myrow.pat_desc);
+
+end if;
+
+
+end loop;
+
+
+end;
+
+/
+
+
+
+
+
+
+
+
+
+--5.)how many patterns do we have of each type
+
+declare
+
+
+
+Cursor patcursor is select * from patterns;
+
+vgloves number := 0;
+vhats number := 0;
+vscarves number := 0;
+vsocks number := 0;
+vblankets number := 0;
+vamis number := 0;
+vsweats number := 0;
+vothers number := 0;
+
+
+
+
+
+begin
+
+
+
+
+for myrow in patcursor loop
+
+if myrow.pat_type = 'Gloves' then
+vgloves := vgloves + 1;
+
+elsif myrow.pat_type = 'Hat' then
+vhats := vhats +1;
+
+elsif myrow.pat_type = 'Scarf' then
+vscarves := vscarves +1;
+
+elsif myrow.pat_type = 'Socks' then
+vsocks := vsocks +1;
+
+elsif myrow.pat_type = 'Blanket' then
+vblankets := vblankets +1;
+
+elsif myrow.pat_type = 'Amigurumi' then
+vamis := vamis +1;
+
+elsif myrow.pat_type = 'Sweater' then
+vsweats := vsweats +1;
+
+else
+vothers := vothers +1;
+
+end if;
+
+
+
+end loop;
+
+
+
+DBMS_output.Put_line('Gloves: '|| vgloves);
+
+DBMS_output.Put_line('Hats: '|| vhats);
+
+DBMS_output.Put_line('Scarves: '|| vscarves);
+
+DBMS_output.Put_line('Socks: '|| vsocks);
+
+DBMS_output.Put_line('Blankets: '|| vblankets);
+
+DBMS_output.Put_line('Amigurumi: '|| vamis);
+
+DBMS_output.Put_line('Sweaters: '|| vsweats);
+
+DBMS_output.Put_line('Other: '|| vothers);
+
+
+
+
+end;
+
+/
+
+
+

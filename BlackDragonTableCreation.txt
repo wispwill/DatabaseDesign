@@ -1,0 +1,207 @@
+
+
+--Code to create Black Dragon Database by Laura Josuweit
+
+DROP TABLE inventory CASCADE CONSTRAINTS;
+DROP TABLE orders CASCADE CONSTRAINTS;
+DROP TABLE employees CASCADE CONSTRAINTS;
+DROP TABLE patterns CASCADE CONSTRAINTS;
+DROP TABLE customers CASCADE CONSTRAINTS;
+
+--SEQUENCES
+DROP SEQUENCE emp_id_seq;
+DROP SEQUENCE c_id_seq;
+DROP SEQUENCE pat_id_seq;
+DROP SEQUENCE o_id_seq;
+DROP SEQUENCE inv_id_seq;
+
+create sequence emp_id_seq
+start with 1
+increment by 1;
+
+create sequence c_id_seq
+start with 1
+increment by 1;
+
+create sequence pat_id_seq
+start with 1
+increment by 1;
+
+create sequence o_id_seq
+start with 1
+increment by 1;
+
+create sequence inv_id_seq
+start with 1
+increment by 1;
+
+ 
+CREATE TABLE customers
+(
+c_id number(4) NOT NULL,
+c_first varchar2(20),
+c_last varchar2(20),
+c_city varchar2(20),
+c_zip varchar2(20),
+c_state varchar2(20),
+c_country varchar2(20),
+CONSTRAINT customers_c_id_pk PRIMARY KEY (c_id)
+);
+
+CREATE TABLE employees
+(
+emp_id number(4) NOT NULL,
+emp_first varchar2(20) NOT NULL,
+emp_last varchar2(20),
+emp_email varchar2(40) NOT NULL,
+emp_phone varchar2(20),
+CONSTRAINT employees_emp_id_pk PRIMARY KEY (emp_id)
+);
+
+ 
+
+CREATE TABLE patterns
+(
+pat_id number(4) NOT NULL,
+pat_name varchar2(20),
+pat_desc varchar2(100),
+pat_type varchar2(20),
+skeins number(4),
+material varchar2(20),
+CONSTRAINT patterns_pat_id_pk PRIMARY KEY (pat_id),
+CONSTRAINT patterns_acceptable_types check (pat_type in ('Hat', 'Scarf','Gloves','Socks', 'Blanket', 'Amigurumi', 'Sweater', 'Other')),
+constraint patterns_skein_amount check (skeins > 0),
+constraint patterns_material_kind check (material in ('Acrylic', 'Cotton','Cashmere','Mohair', 'Wool', 'Merino', 'Other'))
+);
+
+CREATE TABLE orders
+(
+o_id number(4) NOT NULL,
+c_id number(4) NOT NULL,
+emp_id number(4),
+pat_id number(4),
+o_type VARCHAR2(30),
+date_ordered DATE,
+date_filled DATE,
+current_paid number(6),
+current_owed number(6),
+CONSTRAINT orders_o_id_pk PRIMARY KEY (o_id),
+CONSTRAINT orders_c_id_fk FOREIGN KEY (c_id) REFERENCES customers(c_id),
+CONSTRAINT orders_emp_id_fk FOREIGN KEY (emp_id) REFERENCES employees(emp_id),
+CONSTRAINT orders_pat_id_fk FOREIGN KEY (pat_id) REFERENCES patterns(pat_id),
+constraint orders_order_types check (o_type in ('Etsy', 'Online', 'In Person'))
+);
+
+CREATE TABLE inventory
+(
+inv_id number(4) NOT NULL,
+emp_id number(4),
+col_pri varchar2(20) NOT NULL,
+col_sec varchar2(20) NOT NULL,
+col_ter varchar2(20) NOT NULL,
+date_made DATE,
+pat_id number(4),
+price number(6),
+inv_desc varchar2(100),
+CONSTRAINT inventory_inv_id_pk PRIMARY KEY (inv_id),
+CONSTRAINT inventory_emp_id_fk FOREIGN KEY (emp_id) REFERENCES employees(emp_id),
+CONSTRAINT inventory_pat_id_fk FOREIGN KEY (pat_id) REFERENCES patterns(pat_id)
+);
+
+
+ --employees values
+ INSERT INTO employees VALUES
+ (emp_id_seq.nextVal, 'Kaitlin', 'Willow', 'kwillow@gmail.com', '570-555-3487'); 
+
+ INSERT INTO employees VALUES
+ (emp_id_seq.nextVal, 'Ellen', 'Davey', 'ellen9812@gmail.com', '570-555-5634');
+
+ INSERT INTO employees VALUES
+ (emp_id_seq.nextVal, 'Kayla', 'Glee', 'fabarmidillos@gmail.com', '570-555-1928');
+
+ INSERT INTO employees VALUES
+ (emp_id_seq.nextVal, 'Danny', 'Gallon', 'dannynotdan@gmail.com', '570-555-5567');
+
+
+--fill patterns
+ INSERT INTO patterns VALUES
+ (pat_id_seq.nextVal, 'Grumpy Cat Hat', 'Grumpy Cat Hat', 'Hat', 1.5, 'Acrylic');
+
+ INSERT INTO patterns VALUES
+ (pat_id_seq.nextVal, 'Firecracker Gloves', 'thin, fingerless gloves', 'Gloves', 1.8, 'Merino');
+
+ INSERT INTO patterns VALUES
+ (pat_id_seq.nextVal, 'Divine Hat', 'Simple hat with built in swirl', 'Hat', 1.2, 'Acrylic');
+
+ INSERT INTO patterns VALUES
+ (pat_id_seq.nextVal, 'Nyan Cat Amigurumi', 'Stuffed toy that looks like Nyan Cat', 'Amigurumi', 3, 'Acrylic');
+
+ INSERT INTO patterns VALUES
+ (pat_id_seq.nextVal, 'Skull Scarf', 'Scarf with a skull motif', 'Scarf', 2, 'Cashmere');
+
+ INSERT INTO patterns VALUES
+ (pat_id_seq.nextVal, 'Mermaid Blanket', 'Blanket that makes you look like a mermaid', 'Blanket', 7, 'Acrylic');
+
+ INSERT INTO patterns VALUES
+ (pat_id_seq.nextVal, 'Lego Potholder', 'Pot holder that looks like a lego', 'Other', 1, 'Cotton');
+
+ INSERT INTO patterns VALUES
+ (pat_id_seq.nextVal, 'Hobbes Plush', 'Plush Hobbes from Calvin and Hobbes', 'Amigurumi', 2, 'Acrylic');
+
+ INSERT INTO patterns VALUES
+ (pat_id_seq.nextVal, 'Fox Scarf', 'Scarf that looks like a fox', 'Scarf', 1.5, 'Merino');
+
+ 
+--fill customers
+ INSERT INTO customers VALUES
+ (c_id_seq.nextVal, 'Carol', 'Francis', 'Shickshinny', '55543', 'Pennsylvania', 'USA');
+
+ INSERT INTO customers VALUES
+ (c_id_seq.nextVal, 'Roger', 'Davis', 'Toronto', 'M5A 9Z0', 'Ontario', 'Canada');
+
+ INSERT INTO customers VALUES
+ (c_id_seq.nextVal, 'Luther', 'Tatapolous', 'Bloomsburg', '55556', 'Pennsylvania', 'USA');
+
+ INSERT INTO customers VALUES
+ (c_id_seq.nextVal, 'Kathy', 'Gunther', 'Bloomsburg', '55556', 'Pennsylvania', 'USA');
+
+ INSERT INTO customers VALUES
+ (c_id_seq.nextVal, 'Marie', 'Nguyen', 'Austin', '54378', 'Texas', 'USA');
+
+ INSERT INTO customers VALUES
+ (c_id_seq.nextVal, 'Nina', 'Perez', 'Belleville', 'K8N 5W6', 'Ontario', 'Canada');
+
+ 
+ 
+
+ --fill orders
+ INSERT INTO orders VALUES (o_id_seq.nextVal, 2, 3, 3, 'In Person', TO_DATE('09/16/2016', 'MM/DD/YYYY'), TO_DATE('09/30/2016', 'MM/DD/YYYY'), 0, 12);
+ INSERT INTO orders VALUES (o_id_seq.nextVal, 1, 4, 1, 'Etsy', TO_DATE('10/01/2016', 'MM/DD/YYYY'), NULL, 0, 20);
+ INSERT INTO orders VALUES (o_id_seq.nextVal, 2, 4, 2, 'Online', TO_DATE('10/03/2016', 'MM/DD/YYYY'), NULL, 0, 18);
+ INSERT INTO orders VALUES (o_id_seq.nextVal, 3, 2, 6, 'In Person', TO_DATE('10/07/2016', 'MM/DD/YYYY'), TO_DATE('10/27/2016', 'MM/DD/YYYY'), 4, 16);
+ INSERT INTO orders VALUES (o_id_seq.nextVal, 3, 3, 3, 'Online', TO_DATE('10/20/2016', 'MM/DD/YYYY'), NULL, 0, 25);
+ INSERT INTO orders VALUES (o_id_seq.nextVal, 4, 1, 3, 'Etsy', TO_DATE('10/27/2016', 'MM/DD/YYYY'), NULL, 0, 10);
+
+ --fill inventory
+ INSERT INTO inventory VALUES
+ (inv_id_seq.nextVal, 3, 'Teal Green', 'White', 'Black', TO_DATE('09/16/2016', 'MM/DD/YYYY'), NULL, 80.00, 'Eagles Themed Large Quilt');
+
+ INSERT INTO inventory VALUES
+ (inv_id_seq.nextVal, 4, 'Orange', 'White', 'Black', TO_DATE('09/20/2016', 'MM/DD/YYYY'), 8, 28.00, NULL);
+
+ INSERT INTO inventory VALUES
+ (inv_id_seq.nextVal, 4, 'Beige', 'Beige', 'Beige', TO_DATE('10/01/2016', 'MM/DD/YYYY'), 3, 16.00, NULL);
+
+ INSERT INTO inventory VALUES
+ (inv_id_seq.nextVal, 3, 'Light Green', 'Dark Green', 'Black', TO_DATE('10/10/2016', 'MM/DD/YYYY'), NULL, 18.00, 'Creeper Plushie');
+
+ INSERT INTO inventory VALUES
+ (inv_id_seq.nextVal, 2, 'Beige', 'Dark Brown', 'White', TO_DATE('10/13/2016', 'MM/DD/YYYY'), 1, 20.00, NULL);
+
+ INSERT INTO inventory VALUES
+ (inv_id_seq.nextVal, 1, 'Red', 'White', 'Blue', TO_DATE('10/27/2016', 'MM/DD/YYYY'), NULL, 80.00, 'Cowboys Themed Large Quilt');
+
+
+
+--commit;
+

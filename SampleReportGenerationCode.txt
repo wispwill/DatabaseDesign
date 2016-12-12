@@ -1,0 +1,92 @@
+
+
+----------------REPORT 1
+
+rem --print how much money the inventory 
+rem -- made by each employee is worth 
+rem -- and print the total value of current inventory 
+rem -- at the end
+
+
+rem set break and compute settings
+
+break on report on emp_first skip 4
+
+compute sum label 'Total Value' of price on emp_first
+compute sum label 'Total Inventory Value' of price on report
+
+set pagesize 50
+set linesize 90 
+set feedback off 
+
+column emp_first      heading 'Employee|Name'
+column price  format $9999
+column inv_desc     format a20 heading 'Description' 
+column pat_id      heading 'Pattern|ID' 
+column date_made      heading 'Date|Made'
+
+
+ttitle skip 1 center'Employee Inventory Report'  skip 3
+
+btitle skip 1 center 'Laura Josuweit'
+
+select e.emp_first, i.price price, i.inv_desc inv_desc, i.pat_id, 
+i.date_made date_made
+from  inventory i, employees e
+where  i.emp_id = e.emp_id
+order by e.emp_first;
+
+rem clear settings
+
+set feedback on
+
+clear compute
+clear break
+clear column
+ttitle off
+btitle off
+
+
+----------------REPORT 2
+
+
+rem -- Print out all the orders by customer
+
+
+break on report on c_id skip 4
+
+set pagesize 50
+set linesize 100 
+set feedback off 
+
+column o_id      heading 'Order|ID'
+column c_id      heading 'Customer|ID'
+column emp_first      format a8 heading 'Employee|Name'
+column pat_id      heading 'Pattern|ID'
+column o_type     format a10 heading 'Order|Type' 
+column date_ord      heading 'Date|Ordered'
+column date_filled      heading 'Date|Filled'
+column cur_paid      format $999 heading 'Paid'
+column cur_owed      format $999 heading 'Owed'
+
+ttitle skip 1 center'Orders Report'  skip 3
+
+btitle skip 1 center 'Laura Josuweit'
+
+select o.o_id o_id, o.c_id c_id, e.emp_first emp_first, 
+o.pat_id pat_id, o.o_type o_type, 
+o.date_ordered date_ord, o.date_filled date_filled,
+o.current_paid cur_paid, o.current_owed cur_owed
+from  orders o, employees e
+where  o.emp_id = e.emp_id
+order by o.c_id;
+
+rem clear settings
+
+set feedback on
+
+clear compute
+clear break
+clear column
+ttitle off
+btitle off
